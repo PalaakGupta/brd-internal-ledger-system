@@ -1,10 +1,10 @@
 # Python Virtual Environment
-venv/
-__pycache__/
+**/venv/
+**/__pycache__/
 *.pyc
 
 # React / Node
-node_modules/
+**node_modules/
 dist/
 
 # Environment variables
