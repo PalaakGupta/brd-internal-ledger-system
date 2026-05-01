@@ -33,41 +33,43 @@ function TransactionForm({ onTransaction, loading }) {
     <div className="card transaction-form">
       <h2>New Transaction</h2>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Type</label>
-          <select value={type} onChange={e => setType(e.target.value)}>
-            <option value="deposit">Deposit</option>
-            <option value="deduct">Deduct (Purchase)</option>
-          </select>
-        </div>
+  <form onSubmit={handleSubmit}>
+    <div className="form-group">
+      <label htmlFor="type">Type</label>
+      <select id="type" value={type} onChange={e => setType(e.target.value)}>
+        <option value="deposit">Deposit</option>
+        <option value="deduct">Deduct (Purchase)</option>
+      </select>
+    </div>
 
-        <div className="form-group">
-          <label>Amount (₹)</label>
-          <input
-            type="number"
-            value={amount}
-            onChange={e => setAmount(e.target.value)}
-            placeholder="0.00"
-            min="0.01"
-            step="0.01"
-          />
-        </div>
+    <div className="form-group">
+      <label htmlFor="amount">Amount (₹)</label>
+        <input
+          id="amount"
+          type="number"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+          placeholder="0.00"
+          min="0.01"
+          step="0.01"
+        />
+    </div>
 
-        <div className="form-group">
-          <label>Description (optional)</label>
-          <input
-            type="text"
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            placeholder="e.g. Coffee, Snack"
-          />
-        </div>
+    <div className="form-group">
+      <label htmlFor="description">Description (optional)</label>
+      <input
+        id="description"
+        type="text"
+        value={description}
+        onChange={e => setDescription(e.target.value)}
+        placeholder="e.g. Coffee, Snack"
+      />
+    </div>
 
-        <button type="submit" disabled={loading} className={type}>
-          {loading ? "Processing..." : type === "deposit" ? "Deposit" : "Deduct"}
-        </button>
-      </form>
+    <button type="submit" disabled={loading} className={type}>
+      {loading ? "Processing..." : type === "deposit" ? "Deposit" : "Deduct"}
+    </button>
+  </form>
 
       {message && (
         <div className={message.success ? "success-msg" : "error-msg"}>
