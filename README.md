@@ -15,7 +15,7 @@ A micro-accounting system for managing shared office resources like a snack bar 
 | Automation | Bash | Setup and start scripts |
 
 ## Project Structure
-
+```
 brd-internal-ledger-system/
 ├── backend/
 │   ├── main.py          
@@ -35,6 +35,7 @@ brd-internal-ledger-system/
 └── scripts/
 ├── setup.sh
 └── start.sh
+```
 
 ## Getting Started
 
