@@ -4,7 +4,7 @@ import TransactionForm from "./components/TransactionForm"
 import AuditTrail from "./components/AuditTrail"
 import "./App.css"
 
-const API = "http://localhost:8000"
+const API = "http://localhost:8080"
 
 function App() {
   const [userId, setUserId] = useState(1)
