@@ -2,14 +2,32 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_connection
 from models import TransactionRequest, UserCreate
+import logging
 
-app = FastAPI(title="Internal Ledger API", version="1.0.0")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s — %(levelname)s — %(message)s",
+    handlers=[
+        logging.FileHandler("ledger.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+
+app = FastAPI(
+    title="Internal Ledger API",
+    description="A micro-accounting API for managing shared office resources. Enforces double-entry logic and prevents sub-zero balances.",
+    version="1.0.0"
+)
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173",
-     "http://localhost:5174",
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
     ],
     allow_methods=["*"],
     allow_headers=["*"],
@@ -18,13 +36,14 @@ app.add_middleware(
 # HEALTH CHECK
 @app.get("/")
 def root():
-    """Quick check that the API is running"""
+    logger.info("Health check called")
     return {"status": "Internal Ledger API is running"}
 
 
 # GET BALANCE
 @app.get("/balance/{user_id}")
 def get_balance(user_id: int):
+    logger.info(f"Balance request — user_id:{user_id}")
     """
     Returns the current balance for a user.
     Raises 404 if user doesn't exist.
@@ -37,8 +56,9 @@ def get_balance(user_id: int):
         user = cursor.fetchone()
 
         if not user:
+            logger.warning(f"Balance request failed — user_id:{user_id} not found")
             raise HTTPException(status_code=404, detail="User not found")
-
+        logger.info(f"Balance returned — user_id:{user_id} balance:{user['balance']}")
         return user
     finally:
         cursor.close()
@@ -51,6 +71,7 @@ def get_transactions(user_id: int):
     Returns the last 20 transactions for a user.
     This is the immutable audit trail — nothing is ever deleted.
     """
+    logger.info(f"Transactions request — user_id:{user_id}")
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -101,6 +122,7 @@ def transact(request: TransactionRequest):
         # Step 2: If deducting, check for sufficient funds
         if request.type == "deduct":
             if request.amount > current_balance:
+                logger.warning(f"Insufficient funds — user_id:{request.user_id} balance:{current_balance} requested:{request.amount}")
                 raise HTTPException(
                     status_code=400,
                     detail=f"Insufficient funds. Balance: {current_balance}, Requested: {request.amount}"
@@ -158,6 +180,7 @@ def create_user(user: UserCreate):
 
     except Exception as e:
         conn.rollback()
+        logger.error(f"Transaction failed — user_id:{user.id} error:{e}")
         raise HTTPException(status_code=400, detail=f"Could not create user: {e}")
     finally:
         cursor.close()
