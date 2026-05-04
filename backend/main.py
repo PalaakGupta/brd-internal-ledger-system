@@ -92,6 +92,7 @@ def get_transactions(user_id: int):
 # POST TRANSACT
 @app.post("/transact")
 def transact(request: TransactionRequest):
+    logger.info(f"Transaction request — user_id:{request.user_id} type:{request.type} amount:{request.amount}")
     """
     Core business logic endpoint.
     
@@ -146,6 +147,8 @@ def transact(request: TransactionRequest):
         # Step 5: Commit — makes both changes permanent together
         conn.commit()
 
+        logger.info(f"Transaction complete — user_id:{request.user_id} type:{request.type} amount:{request.amount} new_balance:{new_balance}")
+
         return {
             "message": "Transaction successful",
             "new_balance": new_balance,
@@ -157,6 +160,7 @@ def transact(request: TransactionRequest):
         raise
     except Exception as e:
         conn.rollback()
+        logger.error(f"Transaction failed — user_id:{request.user_id} error:{e}")
         raise HTTPException(status_code=500, detail=f"Transaction failed: {e}")
     finally:
         cursor.close()
@@ -164,8 +168,9 @@ def transact(request: TransactionRequest):
 
 
 # CREATE USER
-@app.post("/users")
+@app.post("/users", summary="Create new user", description="Creates a new user with zero balance. Returns the new user's ID.")
 def create_user(user: UserCreate):
+    logger.info(f"Create user request — name:{user.name} email:{user.email}")
     """Creates a new user with zero balance"""
     conn = get_connection()
     cursor = conn.cursor()
@@ -176,11 +181,13 @@ def create_user(user: UserCreate):
             (user.name, user.email)
         )
         conn.commit()
+        logger.info(f"User created — user_id:{cursor.lastrowid}")
         return {"message": "User created", "user_id": cursor.lastrowid}
+        
 
     except Exception as e:
         conn.rollback()
-        logger.error(f"Transaction failed — user_id:{user.id} error:{e}")
+        logger.error(f"Create user failed — error:{e}")
         raise HTTPException(status_code=400, detail=f"Could not create user: {e}")
     finally:
         cursor.close()
