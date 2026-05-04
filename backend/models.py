@@ -16,3 +16,7 @@ class TransactionRequest(BaseModel):
     type: str  # 'deposit' or 'deduct'
     amount: float = Field(gt=0, description="Amount must be greater than 0")
     description: Optional[str] = None
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
