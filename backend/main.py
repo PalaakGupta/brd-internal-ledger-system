@@ -34,14 +34,14 @@ app.add_middleware(
 )
 
 # HEALTH CHECK
-@app.get("/")
+@app.get("/", summary="Health check", description="Simple endpoint to verify that the API is running.")
 def root():
     logger.info("Health check called")
     return {"status": "Internal Ledger API is running"}
 
 
 # GET BALANCE
-@app.get("/balance/{user_id}")
+@app.get("/balance/{user_id}", summary="Get user balance", description="Returns the current balance for a user.")
 def get_balance(user_id: int):
     logger.info(f"Balance request — user_id:{user_id}")
     """
@@ -65,7 +65,7 @@ def get_balance(user_id: int):
         conn.close()
 
 # GET TRANSACTIONS 
-@app.get("/transactions/{user_id}")
+@app.get("/transactions/{user_id}", summary="Get user transactions", description="Returns the last 20 transactions for a user.")
 def get_transactions(user_id: int):
     """
     Returns the last 20 transactions for a user.
@@ -90,7 +90,7 @@ def get_transactions(user_id: int):
         conn.close()
 
 # POST TRANSACT
-@app.post("/transact")
+@app.post("/transact", summary="Create new transaction", description="Creates a new transaction for a user.")
 def transact(request: TransactionRequest):
     logger.info(f"Transaction request — user_id:{request.user_id} type:{request.type} amount:{request.amount}")
     """
