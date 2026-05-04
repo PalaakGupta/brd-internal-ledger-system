@@ -18,7 +18,7 @@ function App() {
   const [lastTransactionType, setLastTransactionType] = useState(null)
 
   // Fetch balance whenever userId changes
-    useEffect(() => {
+  useEffect(() => {
     if (!auth) return
     const timer = setTimeout(() => setLoadingTimeout(true), 5000)
     fetchUser()
@@ -31,6 +31,7 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth])
+
 
   function getHeaders() {
     return {
@@ -58,8 +59,7 @@ function App() {
       const data = await res.json()
       setTransactions(data)
     } catch (err) {
-      console.error("Could not fetch transactions")
-      setError(err.message)
+      console.error("Could not fetch transactions", err)
     }
   }
 
@@ -92,12 +92,15 @@ function App() {
       setLastTransactionType(type)
       setTimeout(() => setLastTransactionType(null), 1500)
 
+      setLastTransactionType(type)
+      setTimeout(() => setLastTransactionType(null), 1500)
+
       // Refresh both balance and transactions after successful transaction
       await fetchUser()
       await fetchTransactions()
       return { success: true }
     } catch (err) {
-      return { success: false, error: e.message }
+      return { success: false, error: err.message }
     } finally {
       setLoading(false)
     }
@@ -132,8 +135,7 @@ function App() {
       {error && <div className="error-banner">{error}</div>}
 
       <SummaryBar summary={summary} />
-
-      <main className="app-main">
+       <main className="app-main">
         <BalanceCard
           user={user}
           loadingTimeout={loadingTimeout}

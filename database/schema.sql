@@ -37,3 +37,5 @@ INSERT INTO transactions (user_id, type, amount, description) VALUES
 (1, 'deposit', 500.00, 'Initial deposit'),
 (2, 'deposit', 300.00, 'Initial deposit'),
 (3, 'deposit', 150.00, 'Initial deposit');
+
+password_hash VARCHAR(255) NOT NULL DEFAULT '',
