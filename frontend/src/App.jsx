@@ -4,7 +4,7 @@ import TransactionForm from "./components/TransactionForm"
 import AuditTrail from "./components/AuditTrail"
 import "./App.css"
 
-const API = "http://localhost:8000"
+const API = "http://localhost:8080"
 
 function App() {
   const [userId, setUserId] = useState(1)
@@ -12,11 +12,19 @@ function App() {
   const [transactions, setTransactions] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+  const [lastTransactionType, setLastTransactionType] = useState(null)
 
   // Fetch balance whenever userId changes
   useEffect(() => {
+    const timer = setTimeout(() => setLoadingTimeout(true), 5000)
     fetchUser()
     fetchTransactions()
+    return () => {
+      clearTimeout(timer)
+      setLoadingTimeout(false)
+      setUser(null)
+    }
      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
@@ -39,8 +47,7 @@ function App() {
       const data = await res.json()
       setTransactions(data)
     } catch (err) {
-      console.error("Could not fetch transactions")
-      setError(err.message)
+      console.error("Could not fetch transactions", err)
     }
   }
 
@@ -59,6 +66,9 @@ function App() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail)
+
+      setLastTransactionType(type)
+      setTimeout(() => setLastTransactionType(null), 1500)
 
       // Refresh both balance and transactions after successful transaction
       await fetchUser()
@@ -87,8 +97,12 @@ function App() {
 
       {error && <div className="error-banner">{error}</div>}
 
-      <main className="app-main">
-        <BalanceCard user={user} />
+       <main className="app-main">
+        <BalanceCard
+          user={user}
+          loadingTimeout={loadingTimeout}
+          flashType={lastTransactionType}
+        />
         <TransactionForm onTransaction={handleTransaction} loading={loading} />
         <AuditTrail transactions={transactions} />
       </main>

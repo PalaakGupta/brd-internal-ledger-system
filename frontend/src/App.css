@@ -102,3 +102,34 @@ tr.deduct { background: #fff5f5; }
 .badge { padding: 3px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
 .badge.deposit { background: #d4edda; color: #155724; }
 .badge.deduct { background: #f8d7da; color: #721c24; }
+/* Loading timeout error card */
+.error-card {
+  text-align: center;
+  padding: 32px;
+  color: var(--error, #e74c3c);
+}
+.error-hint {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 8px;
+}
+
+/* Balance flash animation */
+@keyframes flashGreen {
+  0% { background: #d4edda; }
+  100% { background: white; }
+}
+@keyframes flashRed {
+  0% { background: #f8d7da; }
+  100% { background: white; }
+}
+.flash-deposit { animation: flashGreen 1.5s ease-out; }
+.flash-deduct { animation: flashRed 1.5s ease-out; }
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  color: #888;
+  padding: 24px 0;
+  font-size: 0.95rem;
+}
