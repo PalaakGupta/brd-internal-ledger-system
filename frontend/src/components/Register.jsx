@@ -3,32 +3,49 @@ import { useState } from "react"
 const API = "http://localhost:8080"
 
 function Register({ onBack }) {
-  // Three fields: name, email, password
-  const [form, setForm] = useState({ name: "", email: "", password: "" })
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  })
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
   function handleChange(e) {
-    // Update only the field that changed, keep others
     setForm({ ...form, [e.target.id]: e.target.value })
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
-    setLoading(true)
     setError(null)
 
+    // Frontend validation before hitting API
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters")
+      return
+    }
+
+    setLoading(true)
     try {
       const res = await fetch(`${API}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password
+        })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail)
       setSuccess(true)
-      // Go back to login after 2 seconds
+      // Redirect back to login after 2 seconds
       setTimeout(() => onBack(), 2000)
     } catch (err) {
       setError(err.message)
@@ -37,14 +54,17 @@ function Register({ onBack }) {
     }
   }
 
-  // Success state — show confirmation before redirecting
   if (success) {
     return (
       <div className="login-page">
         <div className="login-card" style={{ textAlign: "center" }}>
           <div style={{ fontSize: "3rem", marginBottom: "16px" }}>✅</div>
-          <h2 style={{ color: "#27ae60" }}>Account Created!</h2>
-          <p style={{ color: "#888", marginTop: "8px" }}>Redirecting to login...</p>
+          <h2 style={{ color: "#27ae60", fontSize: "1.4rem" }}>
+            Account Created!
+          </h2>
+          <p style={{ color: "#888", marginTop: "8px" }}>
+            Redirecting to login...
+          </p>
         </div>
       </div>
     )
@@ -70,6 +90,7 @@ function Register({ onBack }) {
               required
             />
           </div>
+
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -81,6 +102,7 @@ function Register({ onBack }) {
               required
             />
           </div>
+
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
@@ -88,21 +110,40 @@ function Register({ onBack }) {
               type="password"
               value={form.password}
               onChange={handleChange}
-              placeholder="••••••••"
+              placeholder="Minimum 6 characters"
               required
-              minLength={6}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="confirmPassword">Confirm Password</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              placeholder="Repeat your password"
+              required
             />
           </div>
 
           {error && <div className="error-msg">{error}</div>}
 
-          <button type="submit" className="login-btn" disabled={loading}>
+          <button
+            type="submit"
+            className="login-btn"
+            disabled={loading}
+          >
             {loading ? "Creating account..." : "Create Account"}
           </button>
         </form>
 
-        <p className="login-hint" style={{ cursor: "pointer" }} onClick={onBack}>
-          Already have an account? Sign in
+        <p
+          className="login-hint"
+          style={{ cursor: "pointer", color: "#3498db", marginTop: "16px" }}
+          onClick={onBack}
+        >
+          ← Back to login
         </p>
       </div>
     </div>

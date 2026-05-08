@@ -4,17 +4,17 @@ import Register from "./Register"
 const API = "http://localhost:8080"
 
 function Login({ onLogin }) {
+  const [showRegister, setShowRegister] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [showRegister, setShowRegister] = useState(false)
 
-   if (showRegister) {
+  // Switch to register page
+  if (showRegister) {
     return <Register onBack={() => setShowRegister(false)} />
   }
 
-  
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
@@ -40,6 +40,7 @@ function Login({ onLogin }) {
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
+          <span style={{ fontSize: "2.5rem" }}>⚖️</span>
           <h1>Internal Ledger</h1>
           <p>Sign in to your account</p>
         </div>
@@ -71,16 +72,25 @@ function Login({ onLogin }) {
 
           {error && <div className="error-msg">{error}</div>}
 
-          <button type="submit" className="login-btn" disabled={loading}>
+          <button
+            type="submit"
+            className="login-btn"
+            disabled={loading}
+          >
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
         <div className="login-footer">
-          <p className="login-hint" style={{ cursor: "pointer", marginTop: "8px", color: "#3498db" }} onClick={() => setShowRegister(true)}
->
-  New user? Create an account
-</p>
+          <p className="login-hint">
+            Demo: palak@office.com / password123
+          </p>
+          <p
+            className="login-hint register-link"
+            onClick={() => setShowRegister(true)}
+          >
+            New user? Create an account →
+          </p>
         </div>
       </div>
     </div>

@@ -598,3 +598,23 @@ tr:hover td { filter: brightness(0.97); }
 .download-btn:hover {
   background: #dbeeff;
 }
+
+/* Login footer */
+.login-footer {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.register-link {
+  color: #3498db;
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.register-link:hover {
+  color: #2980b9;
+}

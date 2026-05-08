@@ -1,7 +1,11 @@
+
+-- Internal Ledger System — Database Schema
+-- Version 3.0.0
+
 CREATE DATABASE IF NOT EXISTS internal_ledger;
 USE internal_ledger;
 
-    -- Users table
+-- Users table
 CREATE TABLE IF NOT EXISTS users (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     name          VARCHAR(100)  NOT NULL,
@@ -12,7 +16,8 @@ CREATE TABLE IF NOT EXISTS users (
     created_at    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP
 );
 
--- Transactions table — immutable audit trail, never deleted or edited
+-- Transactions table
+-- Immutable audit trail — rows are NEVER deleted or edited
 CREATE TABLE IF NOT EXISTS transactions (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     user_id     INT           NOT NULL,
@@ -23,7 +28,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Resources table — consumables and bookable items
+-- Resources table
+-- Supports both consumables (coffee, snacks) and bookable items (pods, rooms)
 CREATE TABLE IF NOT EXISTS resources (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(100)  NOT NULL,
@@ -35,11 +41,27 @@ CREATE TABLE IF NOT EXISTS resources (
     created_at      TIMESTAMP     DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Bookings table
+-- Tracks who booked what resource and for how long
+CREATE TABLE IF NOT EXISTS bookings (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    user_id          INT NOT NULL,
+    resource_id      INT NOT NULL,
+    booked_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    duration_minutes INT NOT NULL DEFAULT 60,
+    ends_at          TIMESTAMP NOT NULL,
+    status           ENUM('active', 'released', 'expired') DEFAULT 'active',
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (resource_id) REFERENCES resources(id)
+);
+
 -- ==============================================
 -- Seed Data
 -- ==============================================
 
--- Default users (password: password123)
+-- Default users
+-- All passwords are: password123
+-- Admin password is also: password123
 INSERT INTO users (name, email, balance, password_hash, is_admin) VALUES
 ('Palak', 'palak@office.com', 500.00,
  '$2b$12$bE8sPQeSHlBf569prNbfoOPNhcpu9EFO7AoomAScBb/eldEVBleUi', FALSE),
@@ -47,16 +69,17 @@ INSERT INTO users (name, email, balance, password_hash, is_admin) VALUES
  '$2b$12$bE8sPQeSHlBf569prNbfoOPNhcpu9EFO7AoomAScBb/eldEVBleUi', FALSE),
 ('Sneha', 'sneha@office.com', 150.00,
  '$2b$12$bE8sPQeSHlBf569prNbfoOPNhcpu9EFO7AoomAScBb/eldEVBleUi', FALSE),
-('Admin', 'admin@office.com', 0.00,
- '$2b$12$N/Zu49JBiab3rsKT4Eqyku7DqS06nyI1f2HVOF7q2tuEK1Fe3RYVy', TRUE);
- ('Mishal', 'mishal@office.com', 0.00,
+('Mishal', 'mishal@office.com', 200.00,
  '$2b$12$bE8sPQeSHlBf569prNbfoOPNhcpu9EFO7AoomAScBb/eldEVBleUi', FALSE),
-    
--- Opening deposits for non-admin users
+('Admin', 'admin@office.com', 0.00,
+ '$2b$12$bE8sPQeSHlBf569prNbfoOPNhcpu9EFO7AoomAScBb/eldEVBleUi', TRUE);
+
+-- Opening deposits for regular users
 INSERT INTO transactions (user_id, type, amount, description) VALUES
 (1, 'deposit', 500.00, 'Initial deposit'),
 (2, 'deposit', 300.00, 'Initial deposit'),
-(3, 'deposit', 150.00, 'Initial deposit');
+(3, 'deposit', 150.00, 'Initial deposit'),
+(4, 'deposit', 200.00, 'Initial deposit');
 
 -- Consumable resources
 INSERT INTO resources (name, price, icon, category) VALUES
@@ -69,23 +92,6 @@ INSERT INTO resources (name, price, icon, category) VALUES
 
 -- Bookable resources
 INSERT INTO resources (name, price, icon, category, total_units, available_units) VALUES
-('Sleeping Pod',   50.00, '🛏️', 'bookable',  5,  3),
+('Sleeping Pod',   50.00, '🛏️', 'bookable',  5,  5),
 ('Meeting Room A', 100.00, '🏢', 'bookable',  1,  1),
-('Locker',         20.00, '🔒', 'bookable', 10,  7);
-
-USE internal_ledger;
-
--- Bookings table — tracks who booked what and when
-CREATE TABLE IF NOT EXISTS bookings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    resource_id INT NOT NULL,
-    booked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    duration_minutes INT NOT NULL DEFAULT 60,
-    ends_at TIMESTAMP NOT NULL,
-    status ENUM('active', 'released', 'expired') DEFAULT 'active',
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (resource_id) REFERENCES resources(id)
-);
-
--- Add to schema.sql as well
+('Locker',          20.00, '🔒', 'bookable', 10, 10);
