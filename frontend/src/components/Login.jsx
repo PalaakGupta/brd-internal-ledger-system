@@ -1,4 +1,5 @@
 import { useState } from "react"
+import Register from "./Register"
 
 const API = "http://localhost:8080"
 
@@ -7,7 +8,13 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState("")
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [showRegister, setShowRegister] = useState(false)
 
+   if (showRegister) {
+    return <Register onBack={() => setShowRegister(false)} />
+  }
+
+  
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
@@ -69,7 +76,12 @@ function Login({ onLogin }) {
           </button>
         </form>
 
-        <p className="login-hint">Demo: palak@office.com / password123</p>
+        <div className="login-footer">
+          <p className="login-hint" style={{ cursor: "pointer", marginTop: "8px", color: "#3498db" }} onClick={() => setShowRegister(true)}
+>
+  New user? Create an account
+</p>
+        </div>
       </div>
     </div>
   )
