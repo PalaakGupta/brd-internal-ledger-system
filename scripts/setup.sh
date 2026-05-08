@@ -39,4 +39,10 @@ fi
 cd ..
 
 echo ""
+echo "Setting up database..."
+echo "Make sure MySQL is running. Then run:"
+echo "  mysql -u root -p internal_ledger < database/schema.sql"
+echo "Or open database/schema.sql in MySQL Workbench and execute it."
+
+echo ""
 echo "Done. Run: bash scripts/start.sh"

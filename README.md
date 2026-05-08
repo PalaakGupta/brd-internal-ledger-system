@@ -30,6 +30,8 @@ brd-internal-ledger-system/
 │           ├── BalanceCard.jsx
 │           ├── TransactionForm.jsx
 │           └── AuditTrail.jsx
+            ├── Login.jsx
+│           └── SummaryBar.jsx
 ├── database/
 │   └── schema.sql
 └── scripts/

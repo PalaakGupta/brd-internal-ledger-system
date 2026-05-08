@@ -10,11 +10,23 @@ function formatDate(dateStr) {
   })
 }
 
-function AuditTrail({ transactions }) {
+function AuditTrail({ transactions, userId }) {
+
+  function downloadCSV() {
+    window.open(`http://localhost:8080/export/transactions/${userId}`, "_blank")
+  }
+
   if (!transactions.length) {
     return (
       <div className="card audit-trail">
-        <h2>Audit Trail</h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h2 style={{ margin: 0 }}>Audit Trail</h2>
+          {userId && (
+            <button onClick={downloadCSV} className="download-btn">
+              ⬇ Download CSV
+            </button>
+          )}
+        </div>
         <p className="empty-state">No transactions yet. Make a deposit to get started.</p>
       </div>
     )
@@ -22,7 +34,17 @@ function AuditTrail({ transactions }) {
 
   return (
     <div className="card audit-trail">
-      <h2>Audit Trail <span className="subtitle">(last 20 transactions)</span></h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+        <h2 style={{ margin: 0 }}>
+          Audit Trail <span className="subtitle">(last 20 transactions)</span>
+        </h2>
+        {userId && (
+          <button onClick={downloadCSV} className="download-btn">
+            ⬇ Download CSV
+          </button>
+        )}
+      </div>
+
       <table>
         <thead>
           <tr>

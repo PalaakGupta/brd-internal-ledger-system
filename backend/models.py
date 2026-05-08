@@ -5,6 +5,7 @@ class UserCreate(BaseModel):
     """Shape of data needed to create a new user"""
     name: str
     email: str
+    password: str
 
 class TransactionRequest(BaseModel):
     """
@@ -20,3 +21,13 @@ class TransactionRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+
+class ResourceCreate(BaseModel):
+    name: str
+    price: float = Field(gt=0)
+    icon: str = "📦"
+    category: str = "consumable"
+    total_units: Optional[int] = None
+
+from typing import Optional
