@@ -123,35 +123,67 @@ def get_summary(user_id: int):
 @app.post("/transact")
 def transact(request: TransactionRequest):
     logger.info(f"Transaction — user_id:{request.user_id} type:{request.type} amount:{request.amount}")
+    
     if request.type not in ["deposit", "deduct"]:
         raise HTTPException(status_code=400, detail="type must be 'deposit' or 'deduct'")
+    
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute("SELECT balance FROM users WHERE id = %s", (request.user_id,))
-        user = cursor.fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        current_balance = float(user["balance"])
+        # Get the SHARED fund balance — not personal balance
+        cursor.execute("SELECT total_balance FROM fund WHERE id = 1")
+        fund = cursor.fetchone()
+        fund_balance = float(fund["total_balance"])
+        
         if request.type == "deduct":
-            if request.amount > current_balance:
+            # Check SHARED jar has enough — not personal balance
+            if request.amount > fund_balance:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Insufficient funds. Balance: {current_balance}, Requested: {request.amount}"
+                    detail=f"Jar is empty! Fund balance: ₹{fund_balance}. Ask someone to top up."
                 )
-            new_balance = current_balance - request.amount
+            # Deduct from shared fund
+            cursor.execute(
+                "UPDATE fund SET total_balance = total_balance - %s WHERE id = 1",
+                (request.amount,)
+            )
+            # Track personal consumption
+            cursor.execute(
+                "UPDATE users SET total_consumed = total_consumed + %s WHERE id = %s",
+                (request.amount, request.user_id)
+            )
         else:
-            new_balance = current_balance + request.amount
-        cursor.execute("UPDATE users SET balance = %s WHERE id = %s", (new_balance, request.user_id))
+            # Add to shared fund
+            cursor.execute(
+                "UPDATE fund SET total_balance = total_balance + %s WHERE id = 1",
+                (request.amount,)
+            )
+            # Track personal contribution
+            cursor.execute(
+                "UPDATE users SET total_contributed = total_contributed + %s WHERE id = %s",
+                (request.amount, request.user_id)
+            )
+            # Also update personal balance for display purposes
+            cursor.execute(
+                "UPDATE users SET balance = balance + %s WHERE id = %s",
+                (request.amount, request.user_id)
+            )
+
+        # Log transaction
         cursor.execute(
             "INSERT INTO transactions (user_id, type, amount, description) VALUES (%s, %s, %s, %s)",
             (request.user_id, request.type, request.amount, request.description)
         )
         conn.commit()
-        logger.info(f"Transaction complete — user_id:{request.user_id} new_balance:{new_balance}")
+        
+        # Get updated fund balance
+        cursor.execute("SELECT total_balance FROM fund WHERE id = 1")
+        new_fund = cursor.fetchone()
+        
+        logger.info(f"Transaction complete — fund_balance:{new_fund['total_balance']}")
         return {
             "message": "Transaction successful",
-            "new_balance": new_balance,
+            "fund_balance": float(new_fund["total_balance"]),
             "type": request.type,
             "amount": request.amount
         }
@@ -159,8 +191,38 @@ def transact(request: TransactionRequest):
         raise
     except Exception as e:
         conn.rollback()
-        logger.error(f"Transaction failed — user_id:{request.user_id} error:{e}")
+        logger.error(f"Transaction failed: {e}")
         raise HTTPException(status_code=500, detail=f"Transaction failed: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/fund")
+def get_fund():
+    """Returns the shared jar balance"""
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT total_balance FROM fund WHERE id = 1")
+        fund = cursor.fetchone()
+        
+        # Also get individual accountability
+        cursor.execute("""
+            SELECT 
+                u.id, u.name,
+                u.total_contributed,
+                u.total_consumed,
+                (u.total_consumed - u.total_contributed) as net_owes
+            FROM users u
+            WHERE u.is_admin = FALSE
+            ORDER BY net_owes DESC
+        """)
+        members = cursor.fetchall()
+        
+        return {
+            "total_balance": float(fund["total_balance"]),
+            "members": members
+        }
     finally:
         cursor.close()
         conn.close()
@@ -293,28 +355,31 @@ def consume(user_id: int, resource_id: int):
         if resource.get("category") == "bookable":
             avail = resource.get("available_units")
             if avail is not None and avail <= 0:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"{resource['name']} is fully booked. No units available."
-                )
+                raise HTTPException(status_code=400, detail=f"{resource['name']} is fully booked")
 
-        cursor.execute("SELECT balance FROM users WHERE id = %s", (user_id,))
-        user = cursor.fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        current_balance = float(user["balance"])
+        # Check SHARED fund — not personal balance
+        cursor.execute("SELECT total_balance FROM fund WHERE id = 1")
+        fund = cursor.fetchone()
+        fund_balance = float(fund["total_balance"])
         price = float(resource["price"])
 
-        if price > current_balance:
+        if price > fund_balance:
             raise HTTPException(
                 status_code=400,
-                detail=f"Insufficient funds. Balance: {current_balance}, Cost: {price}"
+                detail=f"Jar is empty! Fund: ₹{fund_balance}. Someone needs to top up."
             )
 
-        new_balance = current_balance - price
-
-        cursor.execute("UPDATE users SET balance = %s WHERE id = %s", (new_balance, user_id))
+        # Deduct from shared fund
+        cursor.execute(
+            "UPDATE fund SET total_balance = total_balance - %s WHERE id = 1",
+            (price,)
+        )
+        
+        # Track personal consumption
+        cursor.execute(
+            "UPDATE users SET total_consumed = total_consumed + %s WHERE id = %s",
+            (price, user_id)
+        )
 
         if resource.get("category") == "bookable" and resource.get("available_units") is not None:
             cursor.execute(
@@ -328,14 +393,17 @@ def consume(user_id: int, resource_id: int):
         )
         conn.commit()
 
-        low_balance = new_balance < 50
+        # Get new fund balance
+        cursor.execute("SELECT total_balance FROM fund WHERE id = 1")
+        new_fund = cursor.fetchone()
+        new_fund_balance = float(new_fund["total_balance"])
 
-        logger.info(f"Consumed {resource['name']} — user_id:{user_id} new_balance:{new_balance}")
+        logger.info(f"Consumed {resource['name']} — user:{user_id} fund_balance:{new_fund_balance}")
         return {
             "message": f"{resource['icon']} {resource['name']} logged",
-            "new_balance": new_balance,
+            "fund_balance": new_fund_balance,
             "amount": price,
-            "low_balance_warning": low_balance
+            "low_balance_warning": new_fund_balance < 100
         }
     except HTTPException:
         raise
@@ -685,6 +753,26 @@ def get_user_bookings(user_id: int):
         cursor.close()
         conn.close()
 
+@app.get("/bookings/active/{user_id}")
+def get_active_bookings(user_id: int):
+    """Returns only active bookings for a user"""
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT b.id, b.duration_minutes, b.booked_at,
+                   b.ends_at, b.status,
+                   r.name as resource_name, r.icon
+            FROM bookings b
+            JOIN resources r ON b.resource_id = r.id
+            WHERE b.user_id = %s AND b.status = 'active'
+            ORDER BY b.booked_at DESC
+        """, (user_id,))
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+        
 
 @app.get("/bookings/resource/{resource_id}")
 def get_resource_bookings(resource_id: int):
